@@ -1,0 +1,103 @@
+---
+title: "Final Exam"
+author: "Prof. Bisbee"
+institute: "Vanderbilt University"
+date: "Due Date: 2022/12/14 @ 11:59PM CST"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r,include=F}
+knitr::opts_chunk$set(error=TRUE,warning = FALSE,message = FALSE)
+```
+
+## Getting Set Up
+
+Download the zipped `DS1000_final_exam.zip` folder from Github and save to your class folder for DS1000. Unzip it, retaining the folder structure. Within you should fine a `code` folder and a `data` folder. The `data` folder should contain the four datasets we will be using in the midterm: `trump_tweet_words.Rds`, `nrc.Rds`, `game_summary.Rds`, and `COVID.Death.Voting.Rds`. Within the `code` folder is this very file: `DS1000_final_exam.Rmd`.
+
+Rename this file to `[LAST NAME]_final.Rmd` and do all your work in this file.
+
+## Grading Requirements (READ CAREFULLY)
+Please answer **two** of the following three questions. You may also answer the third question for 10 extra credit points. **If you answer all 3 questions**, please indicate which **two** questions are the final exam submissions, and which **third** question is your intended extra credit. Note that question 2 has an additional 5 points extra credit, but that this is also the hardest exam question.
+
+All of the following questions should be answered with `set.seed(123)`. You will need the following packages:
+
+* `tidyverse`
+* `tidymodels`
+
+**NB**: you will be penalized 1 point for each poorly labeled figure. You will be penalized 5 points if the submission is not a PDF of the knitted output. The total points available are 50, + 10 extra credit points if you answer all 3 questions, and + 15 extra credit points if you make question 2 one of your main submissions.
+
+## Question 0: Independent Work Statement
+Please sign your name in the space provided by typing out your full name in place of the underline:
+
+"I, __________________________________, am aware of the serious nature of plagiarism and affirm that I did not collaborate with other students while completing this final exam."
+
+
+<P style="page-break-before: always">
+
+## Question 1 [25 points]
+You are hired by the Boston Celtics to advise them on what type of trainer to hire. The **goal** of the Celtics is to increase their away winning percent by 10 percentage points. They only can hire one additional trainer, but each trainer only specializes in one part of the game of basketball: offensive rebounds (`oreb`), free throw shooting (`pctFT`), field goal shooting (`pctFG`), and turnovers (`tov`). Each trainer's cost starts at $150,000 is increasingly linearly as follows:
+
+* `oreb` trainer: +$1,000 per additional rebound
+* `tov` trainer: +$3,000 per reduced turnover
+* `pctFT` trainer: +$2,000 per additional percentage point
+* `pctFG` trainer: +$5,000 per additional percentage point
+
+Using the `game_summary.Rds` data, create an accurate prediction model for wins / losses, which you should then use to advise the Celtics on which trainer to hire in order to achieve their **goal** while minimizing costs.
+
+The best answers to this question will:
+
+1. Identify missingness in the data, and visualize the variables of interest using univariate and multivariate visualization, wrangling the data as necessary [5 points] **HINT**: [Topic 6](https://github.com/jbisbee1/DS1000-F2022#6-univariate-data-visualization) & [Topic 7](https://github.com/jbisbee1/DS1000-F2022#7-conditional-relationships--visualization)
+2. Evaluate and compare two models (linear regression and logistic regression) in terms of AUC using cross validation (100 times with 80-20% split) [5 points] **HINT**: [CV AUC Slides](https://www.jamesbisbee.com/DS1000-F2022/Lectures/Topic10_Classification/code/Topic10_Classification_part3_slides.html#23) & [CV AUC Lecture](https://brightspace.vanderbilt.edu/d2l/le/content/386825/viewContent/2589984/View)
+3. Determine the optimal threshold for predicting wins and losses [5 points] **HINT**: [Optimal Threshold](https://www.jamesbisbee.com/DS1000-F2022/Lectures/Topic10_Classification/code/Topic10_Classification_review_slides.html#9)
+4. Apply the best-performing model to a hypothetical dataset to demonstrate that focusing on the proposed area of the game will achieve the desired result [5 points] **HINT**: [Consulting](https://www.jamesbisbee.com/DS1000-F2022/Lectures/Topic10_Classification/code/Topic10_Classification_part3_slides.html#56)
+5. Clearly describe each step, and justify the final advice [5 points]
+
+```{r}
+# INSERT CODE HERE
+```
+
+> - Write answers here.
+
+
+
+<P style="page-break-before: always">
+
+## Question 2 [25 points + 5 EC]
+Using the `trump_tweet_words.Rds` data, combined with the `nrc.Rds` data, investigate the following research question: "Did the sentiment of Trump's tweets influence their popularity?" 
+
+The best answers to this question will:
+
+1. Articulate a theory and a hypothesis in response to the question [5 points] [Theory matters!](https://www.jamesbisbee.com/DS1000-F2022/Lectures/Topic4_DataWrangling/code/Topic4_DataWrangling_part2_slides.html#23)
+2. Merge the Trump tweet data with the NRC sentiment data using `inner_join()`, then calculate the net sentiment per tweet using a combination of `group_by()` + `summarise()`, `spread()`, and `mutate()` [5 points] **HINT**: [2022/11/07 content](https://github.com/jbisbee1/DS1000-F2022#9--clustering-text-twitter-and-sentiment). This doesn't require a written explanation from point 5 below.
+2. Visualize the variables of interest using univariate and multivariate visualization, and wrangle the data as necessary [5 points] **HINT**: [Topic 6](https://github.com/jbisbee1/DS1000-F2022#6-univariate-data-visualization) & [Topic 7](https://github.com/jbisbee1/DS1000-F2022#7-conditional-relationships--visualization)
+4. Run a linear regression model and evaluate in terms of both RMSE (via 100 cross validation with an 80-20 split) and visual analysis of the errors (both univariate visualization of the errors and multivariate visualization of the errors versus the net sentiment) [5 points] **HINT**: [RMSE CV](https://www.jamesbisbee.com/DS1000-F2022/Lectures/Topic8_Regression/code/Topic8_Regression_part2_slides.html#47) & [Error analysis](https://brightspace.vanderbilt.edu/d2l/le/content/386825/viewContent/2563389/View)
+5. Clearly describe each step, and interpret the final regression model in light of the research question. What should you potentially add to the $X$ variables as a control to improve the model? [5 points]
+6. Re-run the model with the control added, and re-evaluate the errors (again, using both univariate and multivariate) [5 EC points]
+
+```{r}
+# INSERT CODE HERE
+```
+
+> - Write answers here.
+
+
+<P style="page-break-before: always">
+
+## Question 3 [25 points]
+Using the `COVID.Death.Voting.Rds` file, answer the following research question: "did counties that supported Trump experience more deaths from Covid than counties that supported Biden?" 
+
+The best answers to this question will:
+
+1. Write a simple theory and a hypothesis [5 points] **HINT**: [Theory matters!](https://www.jamesbisbee.com/DS1000-F2022/Lectures/Topic4_DataWrangling/code/Topic4_DataWrangling_part2_slides.html#23)
+2. Plot the univariate and multivariate distributions of the data, and make any necessary adjustments [5 points] **HINT**: [Topic 6](https://github.com/jbisbee1/DS1000-F2022#6-univariate-data-visualization) & [Topic 7](https://github.com/jbisbee1/DS1000-F2022#7-conditional-relationships--visualization)
+3. Run a simple linear regression of the death rate per 100,000 (**NB** you will have to create this variable with `mutate()`) predicted by the proportion of votes for Trump and evaluate in terms of RMSE (100 cross validated iterations with an 80-20 split) and visual analysis of the errors (both univariate and multivariate visualizations, where the latter compares the errors to the $X$ predictor) [5 points] **HINT**: [RMSE CV](https://www.jamesbisbee.com/DS1000-F2022/Lectures/Topic8_Regression/code/Topic8_Regression_part2_slides.html#47) & [Error analysis](https://brightspace.vanderbilt.edu/d2l/le/content/386825/viewContent/2563389/View)
+4. Run a more complicated linear regression where you control for population density, the percent of the population that is non-Hispanic white, non-Hispanic black, non-Hispanic Asian, and Hispanic, and the turnout percent, and then re-evaluate RMSE and errors [5 points]
+5. Interpret the results in light of the research question [5 points].
+
+```{r}
+# INSERT CODE HERE
+```
+
+> - Write answers here.

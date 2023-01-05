@@ -1,0 +1,439 @@
+---
+title: "Final Exam"
+author: "Ananth Josyula"
+institute: "Vanderbilt University"
+date: "Due Date: 2022/12/14 @ 11:59PM CST"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r,include=F}
+knitr::opts_chunk$set(error=TRUE,warning = FALSE,message = FALSE)
+```
+
+## Getting Set Up
+
+Download the zipped `DS1000_final_exam.zip` folder from Github and save to your class folder for DS1000. Unzip it, retaining the folder structure. Within you should fine a `code` folder and a `data` folder. The `data` folder should contain the four datasets we will be using in the midterm: `trump_tweet_words.Rds`, `nrc.Rds`, `game_summary.Rds`, and `COVID.Death.Voting.Rds`. Within the `code` folder is this very file: `DS1000_final_exam.Rmd`.
+
+Rename this file to `[LAST NAME]_final.Rmd` and do all your work in this file.
+
+## Grading Requirements (READ CAREFULLY)
+Please answer **two** of the following three questions. You may also answer the third question for 10 extra credit points. **If you answer all 3 questions**, please indicate which **two** questions are the final exam submissions, and which **third** question is your intended extra credit. Note that question 2 has an additional 5 points extra credit, but that this is also the hardest exam question.
+
+All of the following questions should be answered with `set.seed(123)`. You will need the following packages:
+
+* `tidyverse`
+* `tidymodels`
+
+**NB**: you will be penalized 1 point for each poorly labeled figure. You will be penalized 5 points if the submission is not a PDF of the knitted output. The total points available are 50, + 10 extra credit points if you answer all 3 questions, and + 15 extra credit points if you make question 2 one of your main submissions.
+
+## Question 0: Independent Work Statement
+Please sign your name in the space provided by typing out your full name in place of the underline:
+
+"I, Ananth Josyula, am aware of the serious nature of plagiarism and affirm that I did not collaborate with other students while completing this final exam."
+
+
+<P style="page-break-before: always">
+
+## Question 1 [25 points]
+You are hired by the Boston Celtics to advise them on what type of trainer to hire. The **goal** of the Celtics is to increase their away winning percent by 10 percentage points. They only can hire one additional trainer, but each trainer only specializes in one part of the game of basketball: offensive rebounds (`oreb`), free throw shooting (`pctFT`), field goal shooting (`pctFG`), and turnovers (`tov`). Each trainer's cost starts at $150,000 is increasingly linearly as follows:
+
+* `oreb` trainer: +$1,000 per additional rebound
+* `tov` trainer: +$3,000 per reduced turnover
+* `pctFT` trainer: +$2,000 per additional percentage point
+* `pctFG` trainer: +$5,000 per additional percentage point
+
+Using the `game_summary.Rds` data, create an accurate prediction model for wins / losses, which you should then use to advise the Celtics on which trainer to hire in order to achieve their **goal** while minimizing costs.
+
+The best answers to this question will:
+
+1. Identify missingness in the data, and visualize the variables of interest using univariate and multivariate visualization, wrangling the data as necessary [5 points] **HINT**: [Topic 6](https://github.com/jbisbee1/DS1000-F2022#6-univariate-data-visualization) & [Topic 7](https://github.com/jbisbee1/DS1000-F2022#7-conditional-relationships--visualization)
+2. Evaluate and compare two models (linear regression and logistic regression) in terms of AUC using cross validation (100 times with 80-20% split) [5 points] **HINT**: [CV AUC Slides](https://www.jamesbisbee.com/DS1000-F2022/Lectures/Topic10_Classification/code/Topic10_Classification_part3_slides.html#23) & [CV AUC Lecture](https://brightspace.vanderbilt.edu/d2l/le/content/386825/viewContent/2589984/View)
+3. Determine the optimal threshold for predicting wins and losses [5 points] **HINT**: [Optimal Threshold](https://www.jamesbisbee.com/DS1000-F2022/Lectures/Topic10_Classification/code/Topic10_Classification_review_slides.html#9)
+4. Apply the best-performing model to a hypothetical dataset to demonstrate that focusing on the proposed area of the game will achieve the desired result [5 points] **HINT**: [Consulting](https://www.jamesbisbee.com/DS1000-F2022/Lectures/Topic10_Classification/code/Topic10_Classification_part3_slides.html#56)
+5. Clearly describe each step, and justify the final advice [5 points]
+
+```{r}
+# INSERT CODE HERE
+#setup
+require(tidyverse)
+require(tidymodels)
+require(tidytext)
+
+gms <- readRDS('../data/game_summary.Rds')
+
+set.seed(123)
+
+summary(gms)
+
+gms <- gms %>%
+  filter(nameTeam == "Boston Celtics")
+
+gms %>%
+  group_by(nameTeam)
+
+#1. Identify missingness in the data, and visualize the variables of interest using univariate and multivariate visualization, wrangling the data as necessary [5 points]
+
+#Univariate continuous integer data so distribution density curve
+gms %>%
+  ggplot(aes(x=oreb))+
+  geom_density()+
+  labs(title = 'Boston Celtics: Distribution of Offensive Rebounds',
+       subtitle = "data from game_summary.rds",
+       x='Offensive Rebounds',
+       y='Density')
+
+#Univariate continuous data so distribution density curve
+gms %>%
+  ggplot(aes(x=pctFT))+
+  geom_density()+
+  labs(title = 'Boston Celtics: Distribution of Percentage of Made Free Throws',
+       subtitle = "data from game_summary.rds",
+       x='Percentage of Made Free Throws',
+       y='Density')
+
+#Univariate continuous data so distribution density curve
+gms %>%
+  ggplot(aes(x=pctFG))+
+  geom_density()+
+  labs(title = 'Boston Celtics: Distribution of Percentage of Made Field Goals',
+       subtitle = "data from game_summary.rds",
+       x='Percentage of Made Field Goals',
+       y='Density')
+
+#Univariate continuous integer data so distribution density curve
+gms %>%
+  ggplot(aes(x=tov))+
+  geom_density()+
+  labs(title = 'Boston Celtics: Distribution of Turnovers',
+       subtitle = "data from game_summary.rds",
+       x='Turnovers',
+       y='Density')
+
+#Multivariate data so boxplot
+gms %>%
+  ggplot(aes(x=isWin, y=oreb))+
+  geom_boxplot()+
+  labs(title = 'Boston Celtics: Offensive Rebounds and Number if Win',
+       subtitle = "data from game_summary.rds",
+       x='Is Win?',
+       y='Offensive Rebounds')
+
+#Multivariate data so boxplot
+gms %>%
+  ggplot(aes(x=isWin, y=pctFT))+
+  geom_boxplot()+
+  labs(title = 'Boston Celtics: Percentage of Made Free Throws and if Win',
+       subtitle = "data from game_summary.rds",
+       x='Is Win?',
+       y='Percentage of Made Free Throws')
+
+#Multivariate data so boxplot
+gms %>%
+  ggplot(aes(x=isWin, y=pctFG))+
+  geom_boxplot()+
+  labs(title = 'Boston Celtics: Percentage of Made Field Goals and if Win',
+       subtitle = "data from game_summary.rds",
+       x='Is Win?',
+       y='Percentage of Made Field Goals')
+
+#Multivariate data so boxplot
+gms %>%
+  ggplot(aes(x=isWin, y=tov))+
+  geom_boxplot()+
+  labs(title = 'Boston Celtics: Turnovers and if Win',
+       subtitle = "data from game_summary.rds",
+       x='Is Win?',
+       y='Turnovers ')
+
+#2. Evaluate and compare two models (linear regression and logistic regression) in terms of AUC using cross validation (100 times with 80-20% split) [5 points]
+
+compRes <- NULL
+
+for(i in 1:100) {
+  inds <- sample(1:nrow(gms),size = round(nrow(gms)*0.8),replace = F)
+  train <- gms %>% slice(inds)
+  test <- gms %>% slice(-inds)
+  
+  mLM <- lm(isWin ~ oreb + tov + pctFT + pctFG, train)
+  mLG <- glm(isWin ~ oreb + tov + pctFT + pctFG, data = train, family = binomial(link = 'logit'))
+
+  #Predict both models
+  pred <- test %>%
+    mutate(predLM = predict(mLM,newdata = test),
+           predLG = predict(mLG,newdata = test,type = 'response'),
+           truth = factor(isWin,levels = c('TRUE','FALSE')))
+  
+  #Evaluate both models
+  resLG <- roc_auc(data = pred,truth = 'truth',estimate = 'predLG') %>%
+    mutate(model = 'logit')
+  resLM <- roc_auc(data = pred,truth = 'truth',estimate = 'predLM') %>%
+    mutate(model = 'linear')
+  compRes <- resLG %>% bind_rows(resLM) %>% bind_rows(compRes)
+}
+
+#Graph both models
+compRes %>%
+  ggplot(aes(x=.estimate,fill = model))+
+  geom_density(alpha = 0.6)+
+  labs(title = 'Boston Celtics: Model Comparison',
+       subtitle = "data from game_summary.rds",
+       x='Estimate',
+       y='Density ')+
+  facet_wrap(~model)
+
+#3. Determine the optimal threshold for predicting wins and losses [5 points]
+
+#Train
+mLG <- glm(isWin ~ tov + oreb + pctFT + pctFG, gms, family = binomial(link = 'logit'))
+
+toplot <- NULL
+for(thresh in seq(0,1,by = 0.025)) {
+  toplot <- gms %>%
+    mutate(predWins = ifelse(predict(mLG, type = 'response') > thresh,1,0)) %>%
+    group_by(isWin) %>%
+    mutate(totalWins = n()) %>%
+    group_by(isWin,predWins,totalWins) %>%
+    summarise(numGames=n(),.groups = 'drop') %>%
+    mutate(prop = numGames / totalWins) %>%
+    mutate(threshold = thresh) %>%
+    bind_rows(toplot)
+}
+
+#Plot optimal threshold
+toplot %>%
+  mutate(metric = ifelse(isWin == TRUE & predWins == 1, 'Sensitivity',
+                         ifelse(isWin == FALSE & predWins == 0, 'Specificity', NA))) %>%
+  drop_na(metric) %>%
+  ggplot(aes(x=threshold,
+             y=prop,
+             color=metric)) +
+  geom_line()+
+  geom_vline(xintercept = .635) +
+  labs(title = "Boston Celtics: Sensitivity and Specificity by Threshold",
+       subtitle = "data from game_summary.rds",
+       x = "Threshold",
+       y = "Proportion")
+
+```
+
+> - Based on the summary of the data, missingness is not apparent. Furthermore, multivariate analysis of Percentage of Made Free Goals and if Win highlights that the median Percentage of Made Field Goals of winning games (TRUE) is around the third quartile of Percentage of Made Field Goals of losing games (FALSE). None of the other multivariate analysis yield as significant a difference. Training the model highlights that there is a correlation   Thus, it is reasonable to conclude that since the Celtics can only hire one additional trainer, they should invest their resources in a Field Goal trainer.
+
+<P style="page-break-before: always">
+
+## Question 2 [25 points + 5 EC]
+Using the `trump_tweet_words.Rds` data, combined with the `nrc.Rds` data, investigate the following research question: "Did the sentiment of Trump's tweets influence their popularity?" 
+
+The best answers to this question will:
+
+1. Articulate a theory and a hypothesis in response to the question [5 points] [Theory matters!](https://www.jamesbisbee.com/DS1000-F2022/Lectures/Topic4_DataWrangling/code/Topic4_DataWrangling_part2_slides.html#23)
+2. Merge the Trump tweet data with the NRC sentiment data using `inner_join()`, then calculate the net sentiment per tweet using a combination of `group_by()` + `summarise()`, `spread()`, and `mutate()` [5 points] **HINT**: [2022/11/07 content](https://github.com/jbisbee1/DS1000-F2022#9--clustering-text-twitter-and-sentiment). This doesn't require a written explanation from point 5 below.
+2. Visualize the variables of interest using univariate and multivariate visualization, and wrangle the data as necessary [5 points] **HINT**: [Topic 6](https://github.com/jbisbee1/DS1000-F2022#6-univariate-data-visualization) & [Topic 7](https://github.com/jbisbee1/DS1000-F2022#7-conditional-relationships--visualization)
+4. Run a linear regression model and evaluate in terms of both RMSE (via 100 cross validation with an 80-20 split) and visual analysis of the errors (both univariate visualization of the errors and multivariate visualization of the errors versus the net sentiment) [5 points] **HINT**: [RMSE CV](https://www.jamesbisbee.com/DS1000-F2022/Lectures/Topic8_Regression/code/Topic8_Regression_part2_slides.html#47) & [Error analysis](https://brightspace.vanderbilt.edu/d2l/le/content/386825/viewContent/2563389/View)
+5. Clearly describe each step, and interpret the final regression model in light of the research question. What should you potentially add to the $X$ variables as a control to improve the model? [5 points]
+6. Re-run the model with the control added, and re-evaluate the errors (again, using both univariate and multivariate) [5 EC points]
+
+```{r}
+# INSERT CODE HERE
+#Load
+nrc <- readRDS('../data/nrc.Rds')
+trump <- readRDS(file="../data/Trump_tweet_words.Rds")
+
+nrc <- nrc %>%
+  filter(sentiment %in% c('positive','negative'))
+
+#2. Merge the Trump tweet data with the NRC sentiment data using `inner_join()`, then calculate the net sentiment per tweet using a combination of `group_by()` + `summarise()`, `spread()`, and `mutate()` [5 points] 
+
+trumpNRC <- trump %>%
+  inner_join(nrc)
+
+trumpSentiment <- trumpNRC %>%
+  group_by(document,retweets) %>%
+  count(sentiment) %>%
+  ungroup() %>%
+  spread(sentiment,n,fill = 0) %>%
+  mutate(netSentiment = positive - negative)
+
+nrc <- get_sentiments('nrc')
+
+trumpSentiment %>%
+  select(document,retweets,netSentiment)
+
+#2. Visualize the variables of interest using univariate and multivariate visualization, and wrangle the data as necessary [5 points]
+
+#Univariate visualization of net sentiment
+trumpSentiment %>%
+  ggplot(aes(x = netSentiment)) +
+  geom_bar() +
+  labs(title = 'Trump: Net Sentiment',
+       subtitle = 'data from Trump_tweet_words.Rds and nrc.Rds',
+       x='Net Sentiment (Positive or Negative)',
+       y='Number of Tweets')
+
+#Univariate visualization of retweets
+trumpSentiment %>%
+  mutate(logRetweets = log(retweets+1))%>%
+  ggplot(aes(x = logRetweets)) +
+  geom_density()+
+  labs(title = 'Trump: Retweets',
+       subtitle = 'data from Trump_tweet_words.Rds and nrc.Rds',
+       x='Retweets',
+       y='Number of Tweets')
+
+#Multivariate visualization
+trumpSentiment %>%
+  mutate(posSent = ifelse(netSentiment < 0,
+                          'Negative',
+                          ifelse(netSentiment > 0,
+                                 'Positive','Neutral')),
+         logRetweets = log(retweets+1)) %>%
+  ggplot(aes(x = posSent, y = logRetweets)) +
+  geom_boxplot() +
+  labs(title = 'Retweets by Net Sentiment',
+       subtitle = 'data from Trump_tweet_words.Rds and nrc.Rds',
+       x='Net Sentiment',
+       y='Retweets')
+
+
+#4. Run a linear regression model and evaluate in terms of both RMSE (via 100 cross validation with an 80-20 split) and visual analysis of the errors (both univariate visualization of the errors and multivariate visualization of the errors versus the net sentiment) [5 points]
+
+#RMSE
+trumpFinal <- trumpSentiment %>%
+  mutate(logRetweets = log(retweets + 1)) %>%
+  drop_na()
+
+set.seed(123)
+
+rmseCV <- NULL
+for(i in 1:100) {
+  inds <- sample(1:nrow(trumpFinal),size = round(nrow(trumpFinal)*0.8),replace = F)
+  train <- trumpFinal %>% slice(inds)
+  test <- trumpFinal %>% slice(-inds)
+  mTrain <- lm(logRetweets ~ netSentiment,train)
+  rmseCV <- test %>%
+    mutate(preds = predict(mTrain,newdata = test)) %>%
+    summarise(rmse = sqrt(mean((logRetweets - preds)^2))) %>%
+    mutate(index = i) %>%
+    bind_rows(rmseCV)
+}
+mean(rmseCV$rmse)
+
+#Visual analysis
+m <- lm(logRetweets ~ netSentiment,trumpFinal)
+
+summary(m)
+
+trumpFinal <- trumpFinal %>%
+  ungroup() %>%
+  mutate(preds = predict(m)) %>%
+  mutate(errors = logRetweets - preds)
+
+trumpFinal %>%
+  ggplot(aes(x = errors)) +
+  geom_density()+
+  labs(title = 'Distribution of Univariate Error',
+       subtitle = 'data from Trump_tweet_words.Rds and nrc.Rds',
+       x='Error',
+       y='Denstiy')
+
+trumpFinal %>%
+  ggplot(aes(x = netSentiment,
+             y = errors)) +
+  geom_point() +
+  geom_hline(yintercept=0)+
+  geom_smooth()+
+  labs(title = 'Multivariate Error',
+       subtitle = 'data from Trump_tweet_words.Rds and nrc.Rds',
+       x='Net Sentiment',
+       y='Error')
+
+#6. Re-run the model with the control added, and re-evaluate the errors (again, using both univariate and multivariate) [5 EC points]
+
+trumpSentiment2 <- trumpNRC %>%
+  filter(Tweeting.year == "2016" | Tweeting.year == "2017" | Tweeting.year == "2018" | Tweeting.year == "2019"| Tweeting.year == "2020")%>%
+  group_by(document,retweets) %>%
+  count(sentiment) %>%
+  ungroup() %>%
+  spread(sentiment,n,fill = 0) %>%
+  mutate(netSentiment = positive - negative)
+require(tidytext)
+nrc <- get_sentiments('nrc')
+
+trumpSentiment2 %>%
+  select(document,retweets,netSentiment)
+
+
+#RMSE
+trumpFinal2 <- trumpSentiment2 %>%
+  mutate(logRetweets = log(retweets + 1))%>%
+  drop_na()
+
+set.seed(123)
+rmseCV2 <- NULL
+for(i in 1:100) {
+  inds <- sample(1:nrow(trumpFinal2),size = round(nrow(trumpFinal2)*0.8),replace = F)
+  train <- trumpFinal2 %>% slice(inds)
+  test <- trumpFinal2 %>% slice(-inds)
+  mTrain <- lm(logRetweets ~ netSentiment,train)
+  rmseCV2 <- test %>%
+    mutate(preds = predict(mTrain,newdata = test)) %>%
+    summarise(rmse = sqrt(mean((logRetweets - preds)^2))) %>%
+    mutate(index = i) %>%
+    bind_rows(rmseCV)
+}
+mean(rmseCV$rmse)
+
+#Visual analysis
+m <- lm(logRetweets ~ netSentiment,trumpFinal2)
+
+summary(m)
+
+trumpFinal2 <- trumpFinal2 %>%
+  ungroup() %>%
+  mutate(preds = predict(m)) %>%
+  mutate(errors = logRetweets - preds)
+
+trumpFinal2 %>%
+  ggplot(aes(x = errors)) +
+  geom_density()+
+  labs(title = 'Distribution of Univariate Error',
+       subtitle = 'data from Trump_tweet_words.Rds and nrc.Rds',
+       x='Error',
+       y='Denstiy')
+
+trumpFinal2 %>%
+  ggplot(aes(x = netSentiment,
+             y = errors)) +
+  geom_point() +
+  geom_hline(yintercept=0)+
+  geom_smooth()+
+  labs(title = 'Multivariate Errors',
+       subtitle = 'data from Trump_tweet_words.Rds and nrc.Rds',
+       x='Net Sentiment',
+       y='Error')
+```
+
+> - Theory: People are drawn to opinions → Trump's tweets that are more opinionated will be more popular
+Hypothesis: If Trump's tweets' net sentiment increases, Trump's tweets will increase in popularity?
+The results show that we failt to accept the hypothesis since the Retweets by Net Sentiment shows little increase in the number of retweets for "Negative" tweets vs "Neutral" tweets and in fact shows a decrease in the number of retweets for "Positive" tweets vs "Neutral" tweets. Thus, although there may be a correlation between "Negative" tweets having more popular, further testing is necessary. It is also interesting that we did not keep track of whether or not the tweet was made in an election year or not as that might have a significant impact on viewers choosing to retweet in pursuit of their candidate's  election victory. Thus, differentiating between election year tweets and non election year tweets could serve as a control to improve the model.
+
+<P style="page-break-before: always">
+
+## Question 3 [25 points]
+Using the `COVID.Death.Voting.Rds` file, answer the following research question: "did counties that supported Trump experience more deaths from Covid than counties that supported Biden?" 
+
+The best answers to this question will:
+
+1. Write a simple theory and a hypothesis [5 points] **HINT**: [Theory matters!](https://www.jamesbisbee.com/DS1000-F2022/Lectures/Topic4_DataWrangling/code/Topic4_DataWrangling_part2_slides.html#23)
+2. Plot the univariate and multivariate distributions of the data, and make any necessary adjustments [5 points] **HINT**: [Topic 6](https://github.com/jbisbee1/DS1000-F2022#6-univariate-data-visualization) & [Topic 7](https://github.com/jbisbee1/DS1000-F2022#7-conditional-relationships--visualization)
+3. Run a simple linear regression of the death rate per 100,000 (**NB** you will have to create this variable with `mutate()`) predicted by the proportion of votes for Trump and evaluate in terms of RMSE (100 cross validated iterations with an 80-20 split) and visual analysis of the errors (both univariate and multivariate visualizations, where the latter compares the errors to the $X$ predictor) [5 points] **HINT**: [RMSE CV](https://www.jamesbisbee.com/DS1000-F2022/Lectures/Topic8_Regression/code/Topic8_Regression_part2_slides.html#47) & [Error analysis](https://brightspace.vanderbilt.edu/d2l/le/content/386825/viewContent/2563389/View)
+4. Run a more complicated linear regression where you control for population density, the percent of the population that is non-Hispanic white, non-Hispanic black, non-Hispanic Asian, and Hispanic, and the turnout percent, and then re-evaluate RMSE and errors [5 points]
+5. Interpret the results in light of the research question [5 points].
+
+```{r}
+# INSERT CODE HERE
+
+```
+
+> - Write answers here.
